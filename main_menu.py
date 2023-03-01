@@ -35,7 +35,7 @@ class MainWindow():
             anchor=W
             ).grid(column=0, 
                 row=0, 
-                columnspan=3,
+                columnspan=2,
                 sticky="W")
         
         # Menu option buttons
@@ -71,7 +71,8 @@ class MainWindow():
         self.view_orders.grid(column=2, 
                         row=1,
                         pady=20,
-                        ipadx=15)
+                        padx=10,
+                        ipadx=5)
 
         # empty database table display
         self.db_display = Frame()
@@ -93,9 +94,6 @@ class MainWindow():
         self.config(width=self.width, height=self.height)
         # rescale all the objects tagged with the "all" tag
         self.scale("all",0,0,wscale,hscale)
-
-
-
 
 if __name__ == "__main__":
     master = Tk()

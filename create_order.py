@@ -70,7 +70,7 @@ class CreateOrder():
             row += 1
 
         # tracking items added
-        self.items_added = {"": []} # item name: labels list
+        self.items_added = {} # item name: labels list
         self.row_no = 0
         # create titles for selected items viewer
         self.items_selected(["Item", "Quantity", "Price"], bg_color="lightyellow")
@@ -95,38 +95,42 @@ class CreateOrder():
             label.grid(column=i, row=self.row_no, ipadx=22, ipady=5, sticky="NSEW")
         
         if bg_color == "white":
-            # update dict of added items and labels 
-            self.items_added[name_list[0]] = item_quantity_price
             # add plus minus buttons to row
             plus = Button(master=frame, text="+", font=DEFAULT_FONT,
                           command=lambda b=name_list[0]: self.plus_item(b), bg="lightgrey")
             plus.grid(column=3, row=self.row_no, ipadx=5, sticky="W")
             minus = Button(master=frame, text="-", font=DEFAULT_FONT,
                            command=lambda b=name_list[0]: self.minus_item(b), bg="lightgrey")
+            # get and save unit price for calculations
+            unit_price = self.db.get_value("Price", "menu", name_list[0])
+            # update dict of added items and labels 
+            self.items_added[name_list[0]] = item_quantity_price + [plus, minus, unit_price]
             minus.grid(column=4, row=self.row_no, ipadx=5, sticky="E")
 
         self.row_no += 1
 
     def plus_item(self, b_name):
         quantity = int(self.items_added[b_name][1]["text"])
+        unit_price = self.items_added[b_name][-1]
         self.items_added[b_name][1].configure(text=quantity+1)
-        unit_price = self.items_added[b_name][2]["text"]/quantity
         self.items_added[b_name][2].configure(text=round(float(unit_price*(quantity+1)),2))
         self.update_total(unit_price, "+")
 
     def minus_item(self, b_name):
         quantity = int(self.items_added[b_name][1]["text"])
-        unit_price = self.items_added[b_name][2]["text"]/quantity
+        unit_price = self.items_added[b_name][-1]
         if quantity > 1:
             self.items_added[b_name][1].configure(text=quantity-1)
-            self.items_added[b_name][2].configure(text=round(float(unit_price/quantity*(quantity-1)),2))
+            self.items_added[b_name][2].configure(text=round(float(unit_price*(quantity-1)),2))
         else:
-            for wdg in self.items_added[b_name]:
-                wdg.destroy()
-                wdg.pack_forget()
-            del self.items_added[b_name]
+            self.delete_order_item(b_name)
         self.update_total(unit_price, "-")
         
+    def delete_order_item(self, b_name):
+        for wdg in self.items_added[b_name][:-1]:
+            wdg.destroy()
+            wdg.pack_forget()
+        del self.items_added[b_name]
     
     def add_to_order(self, event):
         # get selection data
@@ -154,16 +158,17 @@ class CreateOrder():
 
     def location_converter(self):
         geocoder = what3words.Geocoder("N1N5YKSR")
-        lat_long = self.widgets["Location"]["data_widget"].get()
-        res = geocoder.convert_to_3wa(what3words.Coordinates(lat_long))
+        lat_long = [float(i) for i in self.widgets["Location"]["data_widget"].get().split(",")]
+        res = geocoder.convert_to_3wa(what3words.Coordinates(*lat_long))
         location = res["words"]
         return location
     
     def item_list_converter(self):
-        ids = {k:self.db.find_row("menu", k) for k in self.items_added.keys()}
+        ids = {k:self.db.get_value("SandwichID", "menu", k) for k in self.items_added.keys()}
         item_list = []
         for k, v in self.items_added.items():
-            item_list.append(ids[k] * int(v[1]["text"]))
+            for i in range(int(v[1]["text"])):
+                item_list.append(ids[k])
         return str(item_list)
 
     def save_order(self):
@@ -171,30 +176,54 @@ class CreateOrder():
                     self.location_converter(),
                     self.item_list_converter(),
                     float(self.widgets["Total"]["data_widget"]["text"])]
-        
-        new = Order(*data_row)
-        insert = self.db.set_row(new)
-        insert.insert_new()
 
+        self.db.set_row(Order(*data_row))
+        self.db.insert_new()
+
+    def check_input(self):
+        defaults = ((self.widgets["CustomerName"]["data_widget"].get() == "") &
+                    (self.widgets["Location"]["data_widget"].get() == "") &
+                    (self.widgets["Total"]["data_widget"]["text"] == "") &
+                    (len(self.items_added) < 1))
+        
+        correct = lambda: ((len(self.widgets["CustomerName"]["data_widget"].get().split(" ")) > 1) &
+                    (len([float(i) for i in self.widgets["Location"]["data_widget"].get().split(",")]) == 2) &
+                    (float(self.widgets["Total"]["data_widget"]["text"]) > 0.) &
+                    (len(self.items_added) >= 1))
+        try:
+            correct()
+            return True
+        except ValueError or AttributeError:
+            invalid = Toplevel()
+            invalid.title("Invalid input")
+            invalid.geometry("450x150")
+            summary = Label(master=invalid, text="Invalid input: Please correct before confirming", font=("Open Sans", 15))
+            summary.pack(ipady=10)
+            ok = Button(master=invalid, text="Ok", command=invalid.destroy)
+            ok.pack()
+
+        
     def confirming(self):
-        # save order to db
-        self.save_order()
-        # confirmation pop-up
-        confirm_order = Toplevel()
-        confirm_order.title("Order Summary")
-        confirm_order.geometry("300x300")
+        if self.check_input() is True:
+            # save order to db
+            self.save_order()
+            # confirmation pop-up
+            confirm_order = Toplevel()
+            confirm_order.title("Order Summary")
+            confirm_order.geometry("300x300")
 
-        summary = Label(master=confirm_order, text="Your order is on its way!", font=("Open Sans", 15))
-        summary.pack(ipady=10)
-
-        order_contents = Label(master=confirm_order, text=self.widgets.values()["entry"].get())
-        order_contents.pack()
-        
-        ok = Button(master=confirm_order, text="Ok", command=confirm_order.destroy)
-        ok.pack()
-        # clear inputs
-        self.clearing()
+            summary = Label(master=confirm_order, text="Order complete!", font=("Open Sans", 15))
+            summary.pack(ipady=10)
+            
+            ok = Button(master=confirm_order, text="Ok", command=confirm_order.destroy)
+            ok.pack()
+            # clear inputs
+            self.clearing()
         
     def clearing(self):
-        for e in self.widgets.values():
-            e["entry"].delete(0, END)
+        self.widgets["CustomerName"]["data_widget"].delete(0, END)
+        self.widgets["Location"]["data_widget"].delete(0, END)
+        keys = list(self.items_added.keys())
+        for b in keys:
+            self.delete_order_item(b)
+        self.widgets["Total"]["data_widget"].configure(text="")

@@ -64,7 +64,7 @@ class DatabaseController:
         """
         Delete row from table where ItemName matches
         """
-        self.cursor.execute(f"DELETE FROM {self.table} WHERE ItemName is {self.row.ItemName}")
+        self.cursor.execute(f"DELETE FROM {self.table} WHERE ItemName = '{self.row.ItemName}'")
         self.connection.commit()
 
     def update_row(self):
@@ -80,8 +80,12 @@ class DatabaseController:
         self.connection.commit()
 
     def find_row(self, table, name):
-        self.cursor.execute(f"SELECT* FROM {table} WHERE ItemName is {name}")
+        self.cursor.execute(f"SELECT* FROM {table} WHERE ItemName = '{name}'")
         return self.cursor.fetchall()
+    
+    def get_value(self, value, table, name):
+        self.cursor.execute(f"SELECT {value} FROM {table} WHERE ItemName = '{name}'")
+        return list(self.cursor.fetchall()[0])[0]
 
 
     @classmethod
@@ -107,4 +111,4 @@ if __name__ == "__main__":
     #    i = MenuItem(*itm)
     #    hi.set_row(i)
     #    hi.insert_new()
-    #print(hi.display_table("menu"))
+    print(hi.display_table("orders"))

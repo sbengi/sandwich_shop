@@ -16,7 +16,7 @@ class MenuItem:
 class Order:
     CustomerName: str
     Location: str
-    ItemList: list
+    Items: list
     Total: float
 
     @staticmethod
