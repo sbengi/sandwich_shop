@@ -1,10 +1,12 @@
 from tkinter import *
 from create_order import CreateOrder
+from edit_menu import EditMenu
+from edit_order import EditOrder
 
 DEFAULT_FONT = ("OpenSans", 12)
 
 class MainWindow():
-
+    
     def __init__(self, master) -> None:
         self.master = master
         self.master.title("Sandwich Shop")
@@ -56,6 +58,7 @@ class MainWindow():
             text="Edit menu",
             bg="lightgrey",
             font=DEFAULT_FONT,
+            command=self.menu_editor
             )
         self.edit_menu.grid(column=1, 
                         row=1,
@@ -67,6 +70,7 @@ class MainWindow():
             text="View orders",
             bg="lightgrey",
             font=DEFAULT_FONT,
+            command=self.order_editor
             )
         self.view_orders.grid(column=2, 
                         row=1,
@@ -83,6 +87,12 @@ class MainWindow():
 
     def order_menu(self):
         CreateOrder(self.db_display, self.input_widgets)
+
+    def menu_editor(self):
+        EditMenu(self.db_display, self.input_widgets)
+    
+    def order_editor(self):
+        EditOrder(self.db_display, self.input_widgets)
     
     def on_resize(self, event):
         # determine the ratio of old width/height to new width/height
