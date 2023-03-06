@@ -4,15 +4,18 @@ from abc import abstractmethod
 
 from db_controller import DatabaseController
 
-class ViewEditDb:
+class ViewEdit:
     DEFAULT_FONT = ("OpenSans", 12)
     DB = DatabaseController()
 
     def __init__(self, db_display:Frame, input_frame:Frame, specs:dict) -> None:
+        self.db_display = db_display
+        self.input_frame = input_frame
         self.create_db_viewer(db_display, specs["view"])
         self.create_input_widgets(input_frame, specs["input_widgets"])
 
     def create_db_viewer(self, db_display:Frame, view_specs:dict):
+        self.view_specs = view_specs
         self.table_name = Label(master=db_display, text=view_specs["table_name"], font=("Open Sans", 15))
         self.table_name.grid(column=1, row=0, columnspan=3, pady=10, sticky="W")
         table_frame = Frame(master=db_display)
@@ -24,12 +27,14 @@ class ViewEditDb:
         self.table_view = ttk.Treeview(table_frame, yscrollcommand=table_scroll.set)
         self.table_view["columns"] = view_specs["table_view"]["columns"]
         self.table_view.column("#0", width=0)
-        for i, col in enumerate(view_specs["table_view"]["columns"]):
-            self.table_view.column(col, width=150, anchor=W, minwidth=25)
-            self.table_view.heading(col, text=col, anchor=W)
-            table_items = list(self.DB.display_table(view_specs["table_view"]["table"])[i])
+        table_data = self.DB.display_table(view_specs["table_view"]["table"])
+        for col in view_specs["table_view"]["columns"]:
+                self.table_view.column(col, width=150, anchor=W, minwidth=25)
+                self.table_view.heading(col, text=col, anchor=W)
+        for i, data in enumerate(table_data):
+            table_items = list(data)
             table_items = ["Yes" if n == 1 else n for n in 
-                          ["No" if e == 0 else e for e in table_items]][1:]
+                        ["No" if e == 0 else e for e in table_items]][1:]
             if i % 2 == 0:
                 self.table_view.insert(parent="", index="end", iid=i, values=table_items, tags=("even",))
             else:
@@ -48,29 +53,32 @@ class ViewEditDb:
         # bind row selection from table to abstract action
         self.table_view.bind('<ButtonRelease-1>', self.selected_row_action)
 
-    def create_input_widgets(self, input_frame:Frame, input_specs:dict):    
+    def create_input_widgets(self, input_frame:Frame, input_specs:dict):
+        self.input_specs = input_specs
         create = {"entry": lambda: Entry(master=input_frame, width=30, font=self.DEFAULT_FONT),
                   "label": lambda: Label(master=input_frame, font=self.DEFAULT_FONT),
                   "text": lambda: Text(master=input_frame, width=34, height=5),
-                  "frame": lambda: Frame(master=input_frame, width=200, height=150, bg="white"),
-                  "check": lambda: Checkbutton(master=input_frame)}
+                  "frame": lambda: Frame(master=input_frame, width=200, height=150, bg="white")}
         
         self.labels = input_specs["input"]
         
         self.widgets = {}
         for key, val in self.labels.items():
             self.widgets[key] = {"label": Label(master=input_frame, text=val["label"], anchor=E, font=self.DEFAULT_FONT),
-                                 "data_widget": create[val["type"]]()}
+                                    "data_widget": Label() if val["type"] == "checkbox" else create[val["type"]]()}
         row = 2
         for d in self.widgets.values():
             d["label"].grid(column=5, row=row, padx=5, pady=10, ipadx=5, sticky="NW")
             d["data_widget"].grid(column=6, columnspan=3, row=row, padx=5, pady=10, sticky="W")
             row += 1
 
+        self.custom_widgets(row)
+
         col = 6
         for b in input_specs["buttons"]:
             action = Button(master=input_frame, text=b, command=self.confirming, font=self.DEFAULT_FONT, bg="lightgrey")
             action.grid(column=col, row=row+1, sticky="SW")
+            self.widgets[b] = action
             col += 1
         self.clear = Button(master=input_frame, text="Clear selection", command=self.clearing, font=self.DEFAULT_FONT, bg="lightgrey")
         self.clear.grid(column=col, row=row+1, sticky="SW")
@@ -89,11 +97,13 @@ class ViewEditDb:
             invalid = Toplevel()
             invalid.title("Invalid input")
             invalid.geometry("450x150")
-            summary = Label(master=invalid, text="Invalid input: Please correct before confirming", font=("Open Sans", 15))
+            summary = Label(master=invalid,
+                            text="Invalid input: Please correct before confirming",
+                            font=("Open Sans", 15))
             summary.pack(ipady=10)
             ok = Button(master=invalid, text="Ok", command=invalid.destroy)
             ok.pack()
-        
+
     def confirming(self):
         if self.check_input() is True:
             # save order to db
@@ -110,6 +120,14 @@ class ViewEditDb:
             ok.pack()
             # clear inputs
             self.clearing()
+
+    def clear_recreate(self):
+        for widget in self.db_display.winfo_children():
+            widget.destroy()
+        self.create_db_viewer(self.db_display, self.view_specs)
+
+    def custom_widgets(self, row):
+        pass
 
     @abstractmethod
     def correct_input_format(self):

@@ -1,10 +1,10 @@
 from tkinter import *
 import what3words
 
-from view_edit_db import ViewEditDb
-from data import Order
+from view_edit import ViewEdit
+from data import Order, MenuItem
 
-class CreateOrder(ViewEditDb):
+class CreateOrder(ViewEdit):
     MENU_COLUMNS = ("Item Name", "Price(£)", "Vegetarian", "Dairy Free")
     SPECS = {
             "view": {
@@ -54,6 +54,7 @@ class CreateOrder(ViewEditDb):
             minus = Button(master=frame, text="-", font=self.DEFAULT_FONT,
                            command=lambda b=name_list[0]: self.minus_item(b), bg="lightgrey")
             # get and save unit price for calculations
+            self.DB.set_row(MenuItem("", 0. , 0, 0))
             unit_price = self.DB.get_value("Price", "menu", name_list[0])
             # update dict of added items and labels 
             self.items_added[name_list[0]] = item_quantity_price + [plus, minus, unit_price]

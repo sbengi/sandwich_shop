@@ -85,13 +85,22 @@ class MainWindow():
         self.input_widgets = Frame()
         self.input_widgets.grid(column=5, columnspan=4, row=2, rowspan=12, padx=30, pady=20, sticky="NSEW")
 
+    def clear_frame(self):
+        for widget in self.db_display.winfo_children():
+            widget.destroy()
+        for widget in self.input_widgets.winfo_children():
+            widget.destroy()
+        
     def order_menu(self):
+        self.clear_frame()
         CreateOrder(self.db_display, self.input_widgets)
 
     def menu_editor(self):
+        self.clear_frame()
         EditMenu(self.db_display, self.input_widgets)
     
     def order_editor(self):
+        self.clear_frame()
         EditOrder(self.db_display, self.input_widgets)
     
     def on_resize(self, event):

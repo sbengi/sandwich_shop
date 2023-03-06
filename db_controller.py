@@ -15,7 +15,6 @@ new_order_table = '''CREATE TABLE orders (
     Items TEXT,
     Total REAL)
     '''
-    
 
 class DatabaseController:
     connection = connect("sandwich_shop.db")
@@ -48,7 +47,8 @@ class DatabaseController:
     def insert_new(self):
         """_summary_
         """
-        self.cursor.execute(f"INSERT INTO {self.table} {tuple(self.data.keys())} VALUES {tuple(self.data.values())}")
+        self.cursor.execute(
+            f"INSERT INTO {self.table} {tuple(self.data.keys())} VALUES {tuple(self.data.values())}")
         self.connection.commit()
 
     def display_table(self, table:str=None):
@@ -64,29 +64,30 @@ class DatabaseController:
         """
         Delete row from table where ItemName matches
         """
-        self.cursor.execute(f"DELETE FROM {self.table} WHERE ItemName = '{self.row.ItemName}'")
+        name = list(self.data.values())[0].replace("'", "")
+        self.cursor.execute(
+            f"DELETE FROM {self.table} WHERE {list(self.data.keys())[0]} = '{name}'")
         self.connection.commit()
 
-    def update_row(self):
+    def update_row(self, row_id):
         """
         _summary_
         """
         query = f"UPDATE {self.table} SET "
         for key, val in self.data.items():
-            query += f"{key} = {val},"
-        query = query[:-1] + f" WHERE ItemName is {self.row.ItemName}"
-        
+            query += f"{key} = {val}, "
+        query = query[:-2] + f" WHERE {self.row.id_column()} = {row_id}"
+
         self.cursor.execute(query)
         self.connection.commit()
 
     def find_row(self, table, name):
-        self.cursor.execute(f"SELECT* FROM {table} WHERE ItemName = '{name}'")
+        self.cursor.execute(f"SELECT* FROM {table} WHERE {list(self.data.keys())[0]} = '{name}'")
         return self.cursor.fetchall()
     
     def get_value(self, value, table, name):
-        self.cursor.execute(f"SELECT {value} FROM {table} WHERE ItemName = '{name}'")
+        self.cursor.execute(f"SELECT {value} FROM {table} WHERE {list(self.data.keys())[0]} = '{name}'")
         return list(self.cursor.fetchall()[0])[0]
-
 
     @classmethod
     def end_session(cls):
@@ -95,20 +96,3 @@ class DatabaseController:
         """
         cls.connection.commit()
         cls.connection.close()
-
-
-if __name__ == "__main__":
-    hi = DatabaseController()
-
-    from data import MenuItem, Order
-    menu_items = [('Turkey Club', 7.99, 0, 1),
-    ('Grilled Cheese', 4.99, 1, 0),
-    ('Cheese Steak', 8.99, 0, 0),
-    ('Falafel Wrap', 6.99, 1, 1),
-    ('Reuben', 9.99, 0, 1)]
-
-    #for itm in menu_items:
-    #    i = MenuItem(*itm)
-    #    hi.set_row(i)
-    #    hi.insert_new()
-    print(hi.display_table("orders"))

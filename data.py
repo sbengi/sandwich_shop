@@ -10,6 +10,10 @@ class MenuItem:
     @staticmethod
     def table_name():
         return "menu"
+    
+    @staticmethod
+    def id_column():
+        return "SandwichID"
 
 
 @dataclass
@@ -22,4 +26,8 @@ class Order:
     @staticmethod
     def table_name():
         return "orders"
+    
+    @staticmethod
+    def id_column():
+        return "OrderID"
 
