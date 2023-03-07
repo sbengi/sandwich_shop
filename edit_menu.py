@@ -46,37 +46,13 @@ class EditMenu(ViewEdit):
         self.vegi.set(1) if values[2] == "Yes" else self.vegi.set(0)
         self.ndairy.set(1) if values[3] == "Yes" else self.ndairy.set(0)
 
-    def update_existing(self, data_row):
-        row_id = self.DB.get_value(
-            data_row.id_column(), data_row.table_name(), list(data_row.__dict__.values())[0].replace("'", ""))
-        self.DB.update_row(row_id)
-
-    def save_to_db(self):
-        data_row = self.set_data_row()
-        self.DB.set_row(data_row)
-        # update record instead of saving new if record exists
-        try:
-            self.update_existing(data_row)
-        except IndexError:
-            self.DB.insert_new()
-        self.clear_recreate()
-
     def set_data_row(self):
-        data_row = [f"'{self.widgets['ItemName']['data_widget'].get()}'",
+        data_row = [self.widgets['ItemName']['data_widget'].get(),
                     float(self.widgets["Price"]["data_widget"].get()),
                     self.vegi.get(),
                     self.ndairy.get()
                     ]
         return MenuItem(*data_row)
-
-    def delete_record(self):
-        data_row = self.set_data_row()
-        self.DB.set_row(data_row)
-        try:
-            self.DB.delete_row()
-            self.create_db_viewer(self.db_display, self.view_specs)
-        except IndexError:
-            pass
         
     def clearing(self):
         self.widgets["ItemName"]["data_widget"].delete(0, END)

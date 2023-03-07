@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 from abc import abstractmethod
+from sqlite3 import OperationalError
 
 from db_controller import DatabaseController
 
@@ -23,11 +24,15 @@ class ViewEdit:
         
         table_scroll = Scrollbar(table_frame)
         table_scroll.pack(side=RIGHT, fill=Y)
+        table_xscroll = Scrollbar(table_frame, orient="horizontal")
+        table_xscroll.pack(side=BOTTOM, fill=X)
 
-        self.table_view = ttk.Treeview(table_frame, yscrollcommand=table_scroll.set)
+        self.table_view = ttk.Treeview(table_frame, yscrollcommand=table_scroll.set,
+                                       xscrollcommand=table_xscroll.set)
         self.table_view["columns"] = view_specs["table_view"]["columns"]
         self.table_view.column("#0", width=0)
         table_data = self.DB.display_table(view_specs["table_view"]["table"])
+        table_data = self.alter_table_data(table_data)
         for col in view_specs["table_view"]["columns"]:
                 self.table_view.column(col, width=150, anchor=W, minwidth=25)
                 self.table_view.heading(col, text=col, anchor=W)
@@ -94,15 +99,18 @@ class ViewEdit:
             self.correct_input_format()
             return True
         except ValueError or AttributeError:
-            invalid = Toplevel()
-            invalid.title("Invalid input")
-            invalid.geometry("450x150")
-            summary = Label(master=invalid,
-                            text="Invalid input: Please correct before confirming",
-                            font=("Open Sans", 15))
-            summary.pack(ipady=10)
-            ok = Button(master=invalid, text="Ok", command=invalid.destroy)
-            ok.pack()
+            self.invalid_popup()
+
+    def invalid_popup(self):
+        invalid = Toplevel()
+        invalid.title("Invalid input")
+        invalid.geometry("450x150")
+        summary = Label(master=invalid,
+                        text="Invalid input: Please correct before confirming",
+                        font=("Open Sans", 15))
+        summary.pack(ipady=10)
+        ok = Button(master=invalid, text="Ok", command=invalid.destroy)
+        ok.pack()
 
     def confirming(self):
         if self.check_input() is True:
@@ -126,8 +134,39 @@ class ViewEdit:
             widget.destroy()
         self.create_db_viewer(self.db_display, self.view_specs)
 
+    def update_existing(self, data_row):
+        row_id = self.DB.get_value_from_name(
+            data_row.id_column(), data_row.table_name(), list(data_row.__dict__.values())[0])#.replace("'", ""))
+        self.DB.update_row(row_id)
+
+    def save_to_db(self):
+        data_row = self.set_data_row()
+        self.DB.set_row(data_row)
+        # update record instead of saving new if record exists
+        try:
+            self.update_existing(data_row)
+        except IndexError:
+            self.DB.insert_new()
+        self.clear_recreate()
+
+    def delete_record(self):
+        data_row = self.set_data_row()
+        self.DB.set_row(data_row)
+        try:
+            self.DB.delete_row()
+            self.clear_recreate()
+            self.clearing()
+        except IndexError or OperationalError:
+            self.invalid_popup()
+
+    def set_data_row(self):
+        pass
+
     def custom_widgets(self, row):
         pass
+
+    def alter_table_data(self, table_data):
+        return table_data
 
     @abstractmethod
     def correct_input_format(self):
@@ -135,10 +174,6 @@ class ViewEdit:
     
     @abstractmethod
     def selection_action(self, values):
-        pass
-
-    @abstractmethod
-    def save_to_db(self):
         pass
 
     @abstractmethod

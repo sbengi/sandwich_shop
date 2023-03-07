@@ -19,9 +19,7 @@ class CreateOrder(ViewEdit):
                               }
 
     def __init__(self, db_display, input_frame) -> None:
-        super().__init__(db_display, input_frame, CreateOrder.SPECS)
-
-        
+        super().__init__(db_display, input_frame, specs=CreateOrder.SPECS)
         # tracking items added
         self.items_added = {} # item name: labels list
         self.row_no = 0
@@ -55,7 +53,7 @@ class CreateOrder(ViewEdit):
                            command=lambda b=name_list[0]: self.minus_item(b), bg="lightgrey")
             # get and save unit price for calculations
             self.DB.set_row(MenuItem("", 0. , 0, 0))
-            unit_price = self.DB.get_value("Price", "menu", name_list[0])
+            unit_price = self.DB.get_value_from_name("Price", "menu", name_list[0])
             # update dict of added items and labels 
             self.items_added[name_list[0]] = item_quantity_price + [plus, minus, unit_price]
             minus.grid(column=4, row=self.row_no, ipadx=5, sticky="E")
@@ -114,7 +112,7 @@ class CreateOrder(ViewEdit):
         return location
     
     def item_list_converter(self):
-        ids = {k:self.DB.get_value("SandwichID", "menu", k) for k in self.items_added.keys()}
+        ids = {k:self.DB.get_value_from_name("SandwichID", "menu", k) for k in self.items_added.keys()}
         item_list = []
         for k, v in self.items_added.items():
             for i in range(int(v[1]["text"])):

@@ -85,8 +85,12 @@ class DatabaseController:
         self.cursor.execute(f"SELECT* FROM {table} WHERE {list(self.data.keys())[0]} = '{name}'")
         return self.cursor.fetchall()
     
-    def get_value(self, value, table, name):
+    def get_value_from_name(self, value, table, name):
         self.cursor.execute(f"SELECT {value} FROM {table} WHERE {list(self.data.keys())[0]} = '{name}'")
+        return list(self.cursor.fetchall()[0])[0]
+    
+    def get_value(self, value, table, col, id):
+        self.cursor.execute(f"SELECT {value} FROM {table} WHERE {col} = {id}")
         return list(self.cursor.fetchall()[0])[0]
 
     @classmethod
