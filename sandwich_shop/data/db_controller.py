@@ -1,3 +1,5 @@
+"""All database manupulation functions"""
+
 from sqlite3 import connect
 
 from data import MenuItem, Order
@@ -23,6 +25,12 @@ class DatabaseController:
     cursor = connection.cursor()
 
     def __init__(self, row:object=None)->None:
+        """
+        Class containing all database connection, execution, session functions
+
+        Args:
+            row (object, optional): dataclass object like MenuItem or Order. Defaults to None.
+        """
         if row is not None:
             self.set_row()
 
@@ -30,7 +38,7 @@ class DatabaseController:
         """Takes instance of a dataclass object, parses into dictionary, gets associated table name
 
         Args:
-            row (object): datalcass object MenuItem or Order class instance
+            row (object): datalcass object MenuItem or Order
         """
         self.row = row
         self.data = row.__dict__
@@ -66,7 +74,7 @@ class DatabaseController:
 
     def delete_row(self)->None:
         """
-        Delete row from table where ItemName matches
+        Delete row from table where Name column matches
         """
         name = list(self.data.values())[0].replace("'", "")
         self.cursor.execute(
@@ -90,14 +98,14 @@ class DatabaseController:
 
     def find_row(self, table:str, name:str)->list:
         """
-        Finds row of data based on name of item or customer
+        Finds row od data in a given table based on Name column
 
         Args:
-            table (str): table to find row from
-            name (str): _description_
+            table (str): name of table to query from
+            name (str): name of item to find in the NAme column of the table
 
         Returns:
-            list: _description_
+            list: list of tuples containing data in each row
         """
         self.cursor.execute(f"SELECT* FROM {table} WHERE {list(self.data.keys())[0]} = '{name}'")
         return self.cursor.fetchall()

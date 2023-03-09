@@ -1,3 +1,5 @@
+"""Base class for view, edit, create user interfaces and functionalities"""
+
 from tkinter import *
 from tkinter import ttk
 from abc import abstractmethod
@@ -10,12 +12,19 @@ class ViewEdit:
     DB = DatabaseController()
 
     def __init__(self, db_display:Frame, input_frame:Frame, specs:dict)->None:
-        """Parent class for all 
+        """
+        Creates database displayer, editor widgets, action buttons from given specs
 
         Args:
-            db_display (Frame): _description_
-            input_frame (Frame): _description_
-            specs (dict): _description_
+            db_display (Frame): Tkinter frame for the database display table 
+            input_frame (Frame): Tkinter frame for all input widgets and buttons
+            specs (dict): SAMPLE_SPECS = {
+                "view": {"table_name": "",
+                        "table_view": {"columns": (),
+                                        "table": ""}},
+                "input_widgets": {"input": {"Column1": {"label": "", "type": ""},
+                                            "Column2": {"label": "", "type": ""},
+                "buttons": []}}
         """
         self.db_display = db_display
         self.input_frame = input_frame
@@ -23,6 +32,13 @@ class ViewEdit:
         self.create_input_widgets(input_frame, specs["input_widgets"])
 
     def create_db_viewer(self, db_display:Frame, view_specs:dict)->None:
+        """
+        Creates Treeview table for viewing database tables
+
+        Args:
+            db_display (Frame)
+            view_specs (dict): SAMPLE_SPECS["view"] view related configurations
+        """
         self.view_specs = view_specs
         self.table_name = Label(master=db_display, text=view_specs["table_name"], font=("Open Sans", 15))
         self.table_name.grid(column=1, row=0, columnspan=3, pady=10, sticky="W")
@@ -66,6 +82,12 @@ class ViewEdit:
         self.table_view.bind('<ButtonRelease-1>', self.selected_row_action)
 
     def create_input_widgets(self, input_frame:Frame, input_specs:dict)->None:
+        """_summary_
+
+        Args:
+            input_frame (Frame)
+            input_specs (dict): SAMPLE_SPECS["input_widgets"] widget related configurations
+        """
         self.input_specs = input_specs
         create = {"entry": lambda: Entry(master=input_frame, width=30, font=self.DEFAULT_FONT),
                   "label": lambda: Label(master=input_frame, font=self.DEFAULT_FONT),
@@ -96,19 +118,35 @@ class ViewEdit:
         self.clear.grid(column=col, row=row+1, sticky="SW")
 
     def selected_row_action(self, event)->list:
+        """
+        Gets values of the selected row in Treeview, processes custom to each child class
+
+        Args:
+            event (click): listens for click on any row
+
+        Returns:
+            list: values of data in the seleced row
+        """
         selected = self.table_view.focus()
         values = self.table_view.item(selected, 'values')
         self.selection_action(values)
         return values
 
     def check_input(self)->bool|None:
+        """Checks correct input format as implemented by each child class
+
+        Returns:
+            bool|None: True if all input values are in expected format and datatype, else False
+        """
         try:
-            self.correct_input_format()
-            return True
+            return self.correct_input_format()
         except ValueError or AttributeError:
             self.invalid_popup()
 
     def invalid_popup(self)->None:
+        """
+        Creates pop-up message box indicating invalid input
+        """
         invalid = Toplevel()
         invalid.title("Invalid input")
         invalid.geometry("450x150")
@@ -120,6 +158,10 @@ class ViewEdit:
         ok.pack()
 
     def confirming(self)->None:
+        """
+        Saves to database, creates pop-up message confirming completion 
+        for correctly formatted input, clears all input widgets.  
+        """
         if self.check_input() is True:
             # save order to db
             self.save_to_db()
@@ -135,18 +177,32 @@ class ViewEdit:
             ok.pack()
             # clear inputs
             self.clearing()
+        else:
+            self.invalid_popup()
 
-    def clear_recreate(self):
+    def clear_recreate(self)->None:
+        """
+        Destroys database viewer and recreates it so that any changes are reflected
+        """
         for widget in self.db_display.winfo_children():
             widget.destroy()
+            DatabaseController.end_session()
         self.create_db_viewer(self.db_display, self.view_specs)
 
-    def update_existing(self, data_row):
+    def update_existing(self, data_row:object)->None:
+        """Updates existing record in the database by name
+
+        Args:
+            data_row (dataclass): MenuItem or Order
+        """
         row_id = self.DB.get_value_from_name(
             data_row.id_column(), data_row.table_name(), list(data_row.__dict__.values())[0])
         self.DB.update_row(row_id)
 
-    def save_to_db(self):
+    def save_to_db(self)->None:
+        """
+        Updates data or saves to database, updates database viewer
+        """
         data_row = self.set_data_row()
         self.DB.set_row(data_row)
         # update record instead of saving new if record exists
@@ -156,33 +212,64 @@ class ViewEdit:
             self.DB.insert_new()
         self.clear_recreate()
 
-    def delete_record(self):
+    def delete_record(self)->None:
+        """
+        Deletes record from the database
+        """
         data_row = self.set_data_row()
         self.DB.set_row(data_row)
         try:
             self.DB.delete_row()
             self.clear_recreate()
-            self.clearing()
+            self.confirming()
         except IndexError or OperationalError:
             self.invalid_popup()
 
     def set_data_row(self):
+        """
+        Gets data from input widgets into dataclass
+        """
         pass
 
-    def custom_widgets(self, row):
+    def custom_widgets(self, row:int):
+        """Additional widgets for child classes to specify
+
+        Args:
+            row (int): row number to place custom widgets on the UI
+        """
         pass
 
-    def alter_table_data(self, table_data):
+    def alter_table_data(self, table_data:list|tuple):
+        """Alters table data to display user-friendly format
+
+        Args:
+            table_data (list|tuple): list or tuple of lists of data in rows
+
+        Returns:
+            list: list of lists of rows of altered data
+        """
         return table_data
 
     @abstractmethod
     def correct_input_format(self):
+        """
+        Child class specific input checker
+        """
         pass
     
     @abstractmethod
-    def selection_action(self, values):
+    def selection_action(self, values:list|tuple):
+        """
+        Parses and operates on data from selected row in table view
+
+        Args:
+            values (list|tuple): values from the selected row
+        """
         pass
 
     @abstractmethod
     def clearing(self):
+        """
+        Clears all input widgets
+        """
         pass
