@@ -1,10 +1,11 @@
 """Widgets and functionality for editing recorded orders"""
 from tkinter import *
 from tkinter import Frame
-import what3words
 
 from create_order import CreateOrder
 from data import MenuItem, Order
+from utils import what3words_converter, location_converter
+from db_controller import DatabaseController
 
 class EditOrder(CreateOrder):
     ORDER_COLUMNS = ("Customer Name", "Location", "Items", "Total(£)")
@@ -28,6 +29,7 @@ class EditOrder(CreateOrder):
             db_display (Frame): database viewer frame
             input_frame (Frame): input widgets frame
         """
+        self.DB = DatabaseController()
         self.db_display = db_display
         self.input_frame = input_frame
         self.create_db_viewer(db_display, EditOrder.SPECS["view"])
@@ -46,7 +48,7 @@ class EditOrder(CreateOrder):
         # map values to widgets
         self.clearing()
         self.widgets["CustomerName"]["data_widget"].insert(0, values[0])
-        lat_long = self.what3words_converter(values[1])
+        lat_long = what3words_converter(values[1])
         self.widgets["Location"]["data_widget"].insert(0, lat_long)
         # map values to variables
         item = values[2].split(", ")
@@ -67,12 +69,6 @@ class EditOrder(CreateOrder):
                     self.items_selected([i, 1, total])
         self.update_total(total, "+")
 
-    def what3words_converter(self, words):
-        geocoder = what3words.Geocoder("N1N5YKSR")
-        res = geocoder.convert_to_coordinates(words)
-        location = f"{res['coordinates']['lng']}, {res['coordinates']['lat']}"
-        return location
-    
     def id_list_converter(self, items):
         names = [self.DB.get_value("ItemName", "menu", "SandwichID", int(i)) for i in items]
         return names
@@ -85,15 +81,17 @@ class EditOrder(CreateOrder):
         return tuple(alter)
     
     def set_data_row(self):
+        lat_long = [float(i) for i in self.widgets["Location"]["data_widget"].get().split(",")]
         data_row = [self.widgets['CustomerName']['data_widget'].get(),
-                    self.location_converter(),
+                    location_converter(lat_long),
                     self.item_list_converter(),
                     float(self.widgets["Total"]["data_widget"]["text"])]
         return Order(*data_row)
     
     def set_for_save(self):
-        data_row = [f"'{self.widgets['CustomerName']['data_widget'].get()}'",
-                    f"'{self.location_converter()}'",
+        lat_long = [float(i) for i in self.widgets["Location"]["data_widget"].get().split(",")]
+        data_row = [f"{self.widgets['CustomerName']['data_widget'].get()}",
+                    f"'{location_converter(lat_long)}'",
                     f"'{self.item_list_converter()}'",
                     float(self.widgets["Total"]["data_widget"]["text"])]
         return Order(*data_row)

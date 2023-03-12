@@ -90,7 +90,10 @@ class DatabaseController:
         """
         query = f"UPDATE {self.table} SET "
         for key, val in self.data.items():
-            query += f"{key} = {val}, "
+            if "Name" in key:
+                query += f"{key} = '{val}', "
+            else:
+                query += f"{key} = {val}, "
         query = query[:-2] + f" WHERE {self.row.id_column()} = {row_id}"
 
         self.cursor.execute(query)

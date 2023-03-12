@@ -1,8 +1,8 @@
 from tkinter import *
-import what3words
 
 from view_edit import ViewEdit
 from data import Order, MenuItem
+from utils import location_converter
 
 class CreateOrder(ViewEdit):
     MENU_COLUMNS = ("Item Name", "Price(£)", "Vegetarian", "Dairy Free")
@@ -110,16 +110,9 @@ class CreateOrder(ViewEdit):
             old_total = float(old_total)
             value = operate[operation](value)
         self.widgets["Total"]["data_widget"].configure(text=value)
-
-    def location_converter(self):
-        geocoder = what3words.Geocoder("N1N5YKSR")
-        lat_long = [float(i) for i in self.widgets["Location"]["data_widget"].get().split(",")]
-        res = geocoder.convert_to_3wa(what3words.Coordinates(*lat_long))
-        location = res["words"]
-        return location
     
     def item_list_converter(self):
-        ids = {k:self.DB.get_value_from_name("SandwichID", "menu", k) for k in self.items_added.keys()}
+        ids = {k: self.DB.get_value_from_name("SandwichID", "menu", k) for k in self.items_added.keys()}
         item_list = []
         for k, v in self.items_added.items():
             for i in range(int(v[1]["text"])):
@@ -127,11 +120,11 @@ class CreateOrder(ViewEdit):
         return str(item_list)
 
     def save_to_db(self):
+        lat_long = [float(i) for i in self.widgets["Location"]["data_widget"].get().split(",")]
         data_row = [self.widgets["CustomerName"]["data_widget"].get(),
-                    self.location_converter(),
+                    location_converter(lat_long),
                     self.item_list_converter(),
                     float(self.widgets["Total"]["data_widget"]["text"])]
-
         self.DB.set_row(Order(*data_row))
         self.DB.insert_new()
         

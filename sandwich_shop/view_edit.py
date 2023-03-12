@@ -9,7 +9,6 @@ from db_controller import DatabaseController
 
 class ViewEdit:
     DEFAULT_FONT = ("OpenSans", 12)
-    DB = DatabaseController()
 
     def __init__(self, db_display:Frame, input_frame:Frame, specs:dict)->None:
         """
@@ -26,6 +25,7 @@ class ViewEdit:
                                             "Column2": {"label": "", "type": ""},
                 "buttons": []}}
         """
+        self.DB = DatabaseController()
         self.db_display = db_display
         self.input_frame = input_frame
         self.create_db_viewer(db_display, specs["view"])
@@ -187,10 +187,11 @@ class ViewEdit:
         """
         for widget in self.db_display.winfo_children():
             widget.destroy()
-            DatabaseController.end_session()
+        self.DB.end_session()
+        self.DB = DatabaseController()
         self.create_db_viewer(self.db_display, self.view_specs)
 
-    def update_existing(self, data_row:object)->None:
+    def update_existing(self, data_row: object) -> None:
         """Updates existing record in the database by name
 
         Args:
@@ -200,7 +201,7 @@ class ViewEdit:
             data_row.id_column(), data_row.table_name(), list(data_row.__dict__.values())[0])
         self.DB.update_row(row_id)
 
-    def save_to_db(self)->None:
+    def save_to_db(self) -> None:
         """
         Updates data or saves to database, updates database viewer
         """
@@ -219,6 +220,7 @@ class ViewEdit:
         """
         data_row = self.set_data_row()
         self.DB.set_row(data_row)
+        print(self.DB.data)
         try:
             self.DB.delete_row()
             self.clear_recreate()
