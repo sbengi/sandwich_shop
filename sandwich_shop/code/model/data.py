@@ -30,7 +30,7 @@ class MenuItem:
             str: table name
         """
         return "menu"
-    
+
     @staticmethod
     def id_column() -> str:
         """Gets name of ID column in database
@@ -39,6 +39,7 @@ class MenuItem:
             str: ID column name
         """
         return "SandwichID"
+
 
 @dataclass
 class Order:
@@ -61,31 +62,35 @@ class Order:
         validate_types(self)
 
     @staticmethod
-    def table_name()->str:
-        """Gets name of associate table in the database
+    def table_name() -> str:
+        """
+        Gets name of associate table in the database
 
         Returns:
             str: table name
         """
         return "orders"
-    
+
     @staticmethod
-    def id_column()->str:
-        """Gets name of ID column in database
+    def id_column() -> str:
+        """
+        Gets name of ID column in database
 
         Returns:
             str: ID column name
         """
         return "OrderID"
 
+
 def validate_types(obj: object) -> None:
-    """_summary_
+    """
+    Gets type hints defined in dataclasses to confirm input
 
     Args:
-        obj (dataclass): _description_
+        obj (dataclass): MenuItem or Order
 
     Raises:
-        TypeError: _description_
+        TypeError: if incorrect data type input, else None
     """
     types = get_type_hints(obj)
     for k, v in asdict(obj).items():

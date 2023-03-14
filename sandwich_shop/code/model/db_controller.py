@@ -18,9 +18,9 @@ new_order_table = '''CREATE TABLE orders (
     Total REAL)
     '''
 
-class DatabaseController:
 
-    def __init__(self, row: object=None) -> None:
+class DatabaseController:
+    def __init__(self, row: object = None) -> None:
         """
         Class containing all database connection, execution, session functions
 
@@ -32,7 +32,7 @@ class DatabaseController:
             self.set_row(row)
 
     def start_session(self):
-        self.connection = connect("sandwich_shop.db")
+        self.connection = connect("code//model//sandwich_shop.db")
         self.cursor = self.connection.cursor()
 
     def set_row(self, row: object) -> None:
@@ -45,7 +45,7 @@ class DatabaseController:
         self.data = row.__dict__
         self.table = row.table_name()
 
-    def create_table(self, new_table_query:str)->None:
+    def create_table(self, new_table_query: str) -> None:
         """
         Create new sqlite table
 
@@ -60,10 +60,11 @@ class DatabaseController:
         Parses data dictionary into new row in the relevant table
         """
         self.cursor.execute(
-            f"INSERT INTO {self.table} {tuple(self.data.keys())} VALUES {tuple(self.data.values())}")
+            f"""INSERT INTO {self.table} {
+                tuple(self.data.keys())} VALUES {tuple(self.data.values())}""")
         self.connection.commit()
 
-    def display_table(self, table: str=None) -> list:
+    def display_table(self, table: str = None) -> list:
         """
         Returns all rows in a table based on input or table associated with set data row
         """
@@ -81,7 +82,7 @@ class DatabaseController:
             f"DELETE FROM {self.table} WHERE {list(self.data.keys())[0]} = '{name}'")
         self.connection.commit()
 
-    def update_row(self, row_id:int)->None:
+    def update_row(self, row_id: int) -> None:
         """
         Updates the row with given id number to data in set data row
 
@@ -99,7 +100,7 @@ class DatabaseController:
         self.cursor.execute(query)
         self.connection.commit()
 
-    def find_row(self, table:str, name:str)->list:
+    def find_row(self, table: str, name: str) -> list:
         """
         Finds row od data in a given table based on Name column
 
@@ -110,10 +111,11 @@ class DatabaseController:
         Returns:
             list: list of tuples containing data in each row
         """
-        self.cursor.execute(f"SELECT* FROM {table} WHERE {list(self.data.keys())[0]} = '{name}'")
+        self.cursor.execute(
+            f"SELECT* FROM {table} WHERE {list(self.data.keys())[0]} = '{name}'")
         return self.cursor.fetchall()
-    
-    def get_value_from_name(self, value: str, table: str, name: str):
+
+    def get_value_from_name(self, value: str, table: str, name: str) -> str:
         """
         Finds row of data in given table by item name
 
@@ -125,9 +127,10 @@ class DatabaseController:
         Returns:
             str|int: value from the specified column of the found row
         """
-        self.cursor.execute(f"SELECT {value} FROM {table} WHERE {list(self.data.keys())[0]} = '{name}'")
+        self.cursor.execute(
+            f"SELECT {value} FROM {table} WHERE {list(self.data.keys())[0]} = '{name}'")
         return list(self.cursor.fetchall()[0])[0]
-    
+
     def get_value(self, value: str, table: str, col: str, id: int) -> str:
         """
         Finds data in row in given table by ID of the item
@@ -144,7 +147,7 @@ class DatabaseController:
         self.cursor.execute(f"SELECT {value} FROM {table} WHERE {col} = {id}")
         return list(self.cursor.fetchall()[0])[0]
 
-    def end_session(self):
+    def end_session(self) -> None:
         """
         Commit changes and close connection
         """

@@ -1,16 +1,14 @@
-"""Tests for DatabaseController class containing connection and manipulation of the sqlite3 database"""
-
+"""Module and class for testing DatabaseController class"""
 import pytest
 import sqlite3
 from sqlite3 import OperationalError
 from unittest.mock import MagicMock
 
-from .db_controller import DatabaseController
+from code.model.db_controller import DatabaseController
 from .mock_data import mock_row, mock_create_query, MockData
 
 
 class TestDatabaseController:
-    
     @pytest.fixture
     def mock_db(self) -> object:
         """
@@ -23,11 +21,10 @@ class TestDatabaseController:
         self.mock_connection = MagicMock(spec=sqlite3.Connection)
         self.mock_cursor = MagicMock(spec=sqlite3.Cursor)
         self.mock_cursor.fetchall.return_value = [(1, "mock", 5),]
-        # assign mock values to my class
+        # assign mock values to DatabaseController
         dbc = DatabaseController(mock_row)
         dbc.connection = self.mock_connection
         dbc.cursor = self.mock_cursor
-        
         return dbc
 
     def test_set_row(self, mock_db: object) -> None:
@@ -75,9 +72,8 @@ class TestDatabaseController:
         """
         mock_db.table = "TestTable"
         mock_db.data = {"MockName": "'mock'", "MockAmount": 5}
-        insert_query = 'INSERT INTO TestTable (\'MockName\', \'MockAmount\') VALUES ("\'mock\'", 5)'
+        insert_query = 'INSERT INTO TestTable (\'MockName\', \'MockAmount\') VALUES ("\'mock\'", 5)'  # noqa E501
         mock_db.insert_new()
-        #self.mock_connection.commit.assert_called_once()
         self.mock_cursor.execute.assert_called_once_with(insert_query)
 
     def test_display_table(self, mock_db: object) -> list:
@@ -88,7 +84,7 @@ class TestDatabaseController:
             mock_db (object): pytest fixture
         """
         mock_db.table = "TestTable"
-        mock_db.cursor.execute('INSERT INTO TestTable (\'MockName\', \'MockAmount\') VALUES ("\'insert\'", 8)')
+        mock_db.cursor.execute('INSERT INTO TestTable (\'MockName\', \'MockAmount\') VALUES ("\'insert\'", 8)')  # noqa E501
         mock_db.connection.commit()
         result = mock_db.display_table()
         assert "mock" in [list(r)[1] for r in result]
@@ -97,7 +93,7 @@ class TestDatabaseController:
 
     def test_update_row(self, mock_db: object) -> None:
         mock_db.set_row(MockData("'Updated'", 4))
-        query = "UPDATE TestTable SET MockName = 'Updated', MockAmount = 4 WHERE MockID = 1"
+        query = "UPDATE TestTable SET MockName = ''Updated'', MockAmount = 4 WHERE MockID = 1"
         mock_db.update_row(1)
         mock_db.cursor.execute.assert_called_once_with(query)
 
@@ -108,14 +104,16 @@ class TestDatabaseController:
         assert len(result) > 0
 
     def test_get_value_from_name(self, mock_db: object) -> None:
-        mock_db.cursor.execute('INSERT INTO TestTable (MockName, MockAmount) VALUES ("insert", 8)')
-        result = mock_db.get_value_from_name("MockName", "TestTable", "'insert'")
-        mock_db.cursor.execute.assert_called()
+        result = mock_db.get_value_from_name("MockID", "TestTable", "mock")
+        query = "SELECT MockID FROM TestTable WHERE MockName = 'mock'"
+        mock_db.cursor.execute.assert_called_once_with(query)
         mock_db.connection.commit.assert_not_called()
+        assert result == 1
 
     def test_get_value(self, mock_db: object) -> None:
-        result = mock_db.get_value("MockName", "TestTable", "MockID", 1)
-        mock_db.cursor.execute.assert_called_once()
+        mock_db.get_value("MockName", "TestTable", "MockID", 1)
+        query = "SELECT MockName FROM TestTable WHERE MockID = 1"
+        mock_db.cursor.execute.assert_called_once_with(query)
         mock_db.connection.commit.assert_not_called()
 
     def test_delete_row(self, mock_db: object) -> None:
@@ -128,7 +126,7 @@ class TestDatabaseController:
         mock_db.data = {"MockName": "'insert'", "MockAmount": 8}
         query = "DELETE FROM TestTable WHERE MockName = 'insert'"
         mock_db.delete_row()
-        self.mock_cursor.execute.assert_called_once_with(query)      
+        self.mock_cursor.execute.assert_called_once_with(query)
 
     def test_end_session(self, mock_db: object) -> None:
         """
