@@ -2,11 +2,11 @@
 
 from tkinter import *
 
-from code.view.view_edit import ViewEdit
-from code.model.data import MenuItem
+from .gui_base import GuiBase
+from model.data import MenuItem
 
 
-class EditMenu(ViewEdit):
+class EditMenu(GuiBase):
     MENU_COLUMNS = ("Item Name", "Price(£)", "Vegetarian", "Dairy Free")
     SPECS = {
             "view": {
@@ -29,7 +29,7 @@ class EditMenu(ViewEdit):
 
     def __init__(self, db_display: Frame, input_frame: Frame) -> None:
         """
-        Uses ViewEdit base class initiation, assigns specific function to delete button
+        Uses GuiBase base class initiation, assigns specific function to delete button
 
         Args:
             db_display (Frame): database displaye frame
@@ -40,7 +40,7 @@ class EditMenu(ViewEdit):
 
     def custom_widgets(self, row: int) -> None:
         """
-        Adds custom widgets to those defined in base class ViewEdit
+        Adds custom widgets to those defined in base class GuiBase
 
         Args:
             row (int): row number for placement in UI grid

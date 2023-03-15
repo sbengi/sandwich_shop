@@ -1,13 +1,14 @@
 """All input widgets and functionality for creating order on the UI"""
-
+import sys, os
+sys.path.insert(0, os.path.abspath(".."))
 from tkinter import Frame, Button, Label, END
 
-from code.view.view_edit import ViewEdit
-from code.model.data import Order, MenuItem
-from code.model.utils import location_converter
+from .gui_base import GuiBase
+from model.data import Order, MenuItem
+from model.utils import location_converter
 
 
-class CreateOrder(ViewEdit):
+class CreateOrder(GuiBase):
     MENU_COLUMNS = ("Item Name", "Price(£)", "Vegetarian", "Dairy Free")
     SPECS = {
             "view": {
@@ -26,7 +27,7 @@ class CreateOrder(ViewEdit):
 
     def __init__(self, db_display: Frame, input_frame: Frame) -> None:
         """
-        Uses ViewEdit base class to create all input widgets and binds buttons to relevant actions
+        Uses GuiBase base class to create all input widgets and binds buttons to relevant actions
 
         Args:
             db_display (Frame): database display frame
@@ -81,11 +82,12 @@ class CreateOrder(ViewEdit):
             minus = Button(master=frame, text="-", font=self.DEFAULT_FONT,
                            command=lambda b=name_list[0]: self.minus_item(b), bg="lightgrey")
             # get and save unit price for calculations
-            self.DB.set_row(MenuItem("", 0., 0, 0))
-            unit_price = self.DB.get_value_from_name("Price", "menu", name_list[0])
-            item_quantity_price[2].configure(text=unit_price)
+            #self.DB.set_row(MenuItem("", 0., 0, 0))
+            print(name_list)
+            #unit_price = self.DB.get_value_from_name("Price", "menu", name_list[0])
+            item_quantity_price[2].configure(text=name_list[2])
             # update dict of added items and labels
-            self.items_added[name_list[0]] = item_quantity_price + [plus, minus, unit_price]
+            self.items_added[name_list[0]] = item_quantity_price + [plus, minus, name_list[2]]
             minus.grid(column=4, row=self.row_no, ipadx=5, sticky="E")
         self.row_no += 1
 
@@ -176,6 +178,7 @@ class CreateOrder(ViewEdit):
         Returns:
             str: string of item ids list
         """
+        self.DB.set_row(MenuItem("", 0., 0, 0))
         ids = {k: self.DB.get_value_from_name("SandwichID", "menu", k)
                for k in self.items_added.keys()}
         item_list = []
@@ -188,8 +191,7 @@ class CreateOrder(ViewEdit):
         """
         Convert inputs to dataclass object and insert into database
         """
-        lat_long = [float(i) for i in
-                    self.widgets["Location"]["data_widget"].get().split(",")]
+        lat_long = self.widgets["Location"]["data_widget"].get()
         data_row = [self.widgets["CustomerName"]["data_widget"].get(),
                     location_converter(lat_long),
                     self.item_list_converter(),

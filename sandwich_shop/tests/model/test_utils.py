@@ -1,8 +1,8 @@
 """Unit tests for xternal call functions"""
 import what3words
 
-from code.model.utils import what3words_converter, location_converter
-from .mock_data import mock_location, mock_latlong, mock_latlong_list, mock_words
+from code.model import utils
+from mock_data import mock_location, mock_latlong, mock_latlong_list, mock_words
 
 
 def mock_api_call(monkeypatch: object):
@@ -40,7 +40,7 @@ def test_what3words_converter(monkeypatch):
     Args:
         monkeypatch (object): mock object
     """
-    location = what3words_converter(mock_words)
+    location = utils.what3words_converter(mock_words)
     assert location == mock_latlong
 
 
@@ -51,5 +51,5 @@ def test_location_converter(monkeypatch):
     Args:
         monkeypatch (object): mock object
     """
-    location = location_converter(mock_latlong_list)
+    location = utils.location_converter(mock_latlong_list)
     assert location == mock_words

@@ -1,10 +1,10 @@
 """Widgets and functionality for editing recorded orders"""
 from tkinter import Frame
 
-from code.view.create_order import CreateOrder
-from code.model.data import MenuItem, Order
-from code.model.utils import what3words_converter, location_converter
-from code.model.db_controller import DatabaseController
+from .create_order import CreateOrder
+from model.data import MenuItem, Order
+from model.utils import what3words_converter, location_converter
+from model.db_controller import DatabaseController
 
 
 class EditOrder(CreateOrder):
@@ -115,7 +115,7 @@ class EditOrder(CreateOrder):
         Returns:
             object: Order dataclass
         """
-        lat_long = [float(i) for i in self.widgets["Location"]["data_widget"].get().split(",")]
+        lat_long = self.widgets["Location"]["data_widget"].get()
         data_row = [self.widgets['CustomerName']['data_widget'].get(),
                     location_converter(lat_long),
                     self.item_list_converter(),

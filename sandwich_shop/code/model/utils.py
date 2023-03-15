@@ -1,6 +1,9 @@
-"""Module for external api call functions"""
-import what3words
+"""Module for external what3words api call functions"""
+import requests
+import os
 
+# get the environment variable api key
+api_key = os.environ.get("API_KEY")
 
 def what3words_converter(words: str) -> str:
     """
@@ -12,23 +15,27 @@ def what3words_converter(words: str) -> str:
     Returns:
         str: latitude, logitude converted to string
     """
-    geocoder = what3words.Geocoder("N1N5YKSR")
-    res = geocoder.convert_to_coordinates(words)
-    location = f"{res['coordinates']['lat']}, {res['coordinates']['lng']}"
-    return location
+    request_link = "https://api.what3words.com/v3/convert-to-coordinates"
+    req = {"words": words, "key": api_key}
+    result = requests.get(request_link, params=req)
+    result = result.json()["coordinates"]
+    lat_long = f"{result['lat']}, {result['lng']}"
+    return lat_long
 
 
-def location_converter(lat_long: list) -> str:
+def location_converter(lat_long: str) -> str:
     """
     Calls api to convert latitude, longutude to what3words
 
     Args:
-        lat_long (list): list with two flaot numbers for coordinates
+        lat_long (str): two flaot numbers for coordinates
 
     Returns:
         str: what3words
     """
-    geocoder = what3words.Geocoder("N1N5YKSR")
-    res = geocoder.convert_to_3wa(what3words.Coordinates(*lat_long))
-    location = res["words"]
-    return location
+    request_link = "https://api.what3words.com/v3/convert-to-3wa"
+    query = {"coordinates": lat_long, "key": api_key}
+    result = requests.get(request_link, params=query)
+    print(result)
+    words = result.json()["words"]
+    return words

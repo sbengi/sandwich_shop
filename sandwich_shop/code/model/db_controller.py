@@ -129,6 +129,7 @@ class DatabaseController:
         """
         self.cursor.execute(
             f"SELECT {value} FROM {table} WHERE {list(self.data.keys())[0]} = '{name}'")
+        print(self.cursor.fetchall())
         return list(self.cursor.fetchall()[0])[0]
 
     def get_value(self, value: str, table: str, col: str, id: int) -> str:

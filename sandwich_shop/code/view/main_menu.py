@@ -1,9 +1,9 @@
 """Creates app window and the initial view, initiates relevant interfaces"""
 
 from tkinter import *
-from code.view.create_order import CreateOrder
-from code.view.edit_menu import EditMenu
-from code.view.edit_order import EditOrder
+from .create_order import CreateOrder
+from .edit_menu import EditMenu
+from .edit_order import EditOrder
 
 DEFAULT_FONT = ("OpenSans", 12)
 

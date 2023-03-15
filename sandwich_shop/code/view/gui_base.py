@@ -1,14 +1,16 @@
 """Base class for view, edit, create user interfaces and functionalities"""
+import sys, os
+sys.path.insert(0, os.path.abspath(".."))
 
 from tkinter import *
 from tkinter import ttk
 from abc import abstractmethod
 from sqlite3 import OperationalError
 
-from code.model.db_controller import DatabaseController
+from model.db_controller import DatabaseController
 
 
-class ViewEdit:
+class GuiBase:
     DEFAULT_FONT = ("OpenSans", 12)
 
     def __init__(self, db_display: Frame, input_frame: Frame, specs: dict) -> None:
@@ -156,7 +158,7 @@ class ViewEdit:
         self.selection_action(values)
         return values
 
-    def check_input(self) -> bool | None:
+    def check_input(self):
         """Checks correct input format as implemented by each child class
 
         Returns:
@@ -243,7 +245,6 @@ class ViewEdit:
         """
         data_row = self.set_data_row()
         self.DB.set_row(data_row)
-        print(self.DB.data)
         try:
             self.DB.delete_row()
             self.clear_recreate()
@@ -265,11 +266,11 @@ class ViewEdit:
         """
         pass
 
-    def alter_table_data(self, table_data: list | tuple):
+    def alter_table_data(self, table_data: list) -> list:
         """Alters table data to display user-friendly format
 
         Args:
-            table_data (list|tuple): list or tuple of lists of data in rows
+            table_data (list): list or tuple of lists of data in rows
 
         Returns:
             list: list of lists of rows of altered data
@@ -284,7 +285,7 @@ class ViewEdit:
         pass
 
     @abstractmethod
-    def selection_action(self, values: list | tuple):
+    def selection_action(self, values):
         """
         Parses and operates on data from selected row in table view
 

@@ -4,8 +4,8 @@ import sqlite3
 from sqlite3 import OperationalError
 from unittest.mock import MagicMock
 
-from code.model.db_controller import DatabaseController
-from .mock_data import mock_row, mock_create_query, MockData
+from code.model import db_controller
+from mock_data import mock_row, mock_create_query, MockData
 
 
 class TestDatabaseController:
@@ -22,7 +22,7 @@ class TestDatabaseController:
         self.mock_cursor = MagicMock(spec=sqlite3.Cursor)
         self.mock_cursor.fetchall.return_value = [(1, "mock", 5),]
         # assign mock values to DatabaseController
-        dbc = DatabaseController(mock_row)
+        dbc = db_controller.DatabaseController(mock_row)
         dbc.connection = self.mock_connection
         dbc.cursor = self.mock_cursor
         return dbc
