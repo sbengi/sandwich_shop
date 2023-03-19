@@ -1,55 +1,62 @@
-"""Unit tests for xternal call functions"""
-import what3words
+"""
+Unit tests for xternal call functions
+Sources:
+https://docs.pytest.org/en/latest/how-to/monkeypatch.html
+https://pytest-with-eric.com/pytest-best-practices/pytest-monkeypatch/
+"""
+import requests
 
 from code.model import utils
-from mock_data import mock_location, mock_latlong, mock_latlong_list, mock_words
-
-
-def mock_api_call(monkeypatch: object):
-    """
-    Creates a mock for what3words api call coordinate conversion function
-
-    Args:
-        monkeypatch (object): mock object
-    """
-    def mock_convert_to_coordinates(*args):
-        return mock_location
-    monkeypatch.setattr(what3words,
-                        "geocoder.convert_to_coordinates",
-                        mock_convert_to_coordinates)
-
-
-def mock_api_get(monkeypatch: object):
-    """
-    Creates a mock for what3words api call 3word conversion function
-
-    Args:
-        monkeypatch (object): mock object
-    """
-    def mock_convert_to_3wa(*args):
-        return mock_location
-    monkeypatch.setattr(what3words,
-                        "geocoder.convert_to_3wa",
-                        mock_convert_to_3wa)
+from mock_data import mock_latlong, mock_latlong_response, mock_words, mock_words_response
 
 
 def test_what3words_converter(monkeypatch):
     """
-    Checks converter function returns expected string
+    Creates a monkeypatch for requests from the what3words api,
+    tests what3words_converter returns expected response
 
     Args:
-        monkeypatch (object): mock object
+        monkeypatch (function): mock patch for what3words HTTP request
     """
-    location = utils.what3words_converter(mock_words)
-    assert location == mock_latlong
+    def mock_get(*args, **kwargs):
+        class MockResponse:
+            def __init__(self, response, response_code):
+                self.response = response
+                self.response_code = response_code
+
+            def json(self):
+                return self.response
+
+        if "convert-to-coordinates" in args[0]:
+            return MockResponse(mock_latlong_response, 200)
+        else:
+            return MockResponse(None, 404)
+    monkeypatch.setattr(requests, "get", mock_get)
+
+    assert utils.what3words_converter(mock_words) == mock_latlong
 
 
 def test_location_converter(monkeypatch):
     """
-    Checks converter function returns expected string
+    Creates a monkeypatch for requests from the what3words api,
+    tests location_converter returns expected response
 
     Args:
-        monkeypatch (object): mock object
+        monkeypatch (function): mock patch for what3words HTTP request
     """
-    location = utils.location_converter(mock_latlong_list)
-    assert location == mock_words
+    def mock_get(*args, **kwargs):
+        class MockResponse:
+            def __init__(self, json_data, status_code):
+                self.json_data = json_data
+                self.status_code = status_code
+
+            def json(self):
+                return self.json_data
+
+        if "convert-to-3wa" in args[0]:
+            return MockResponse(mock_words_response, 200)
+        else:
+            return MockResponse(None, 404)
+    monkeypatch.setattr(requests, "get", mock_get)
+
+    assert utils.location_converter(mock_latlong) == mock_words

@@ -1,4 +1,10 @@
-"""All database manupulation functions"""
+"""
+All database manupulation functions
+Sources:
+https://docs.python.org/3/library/sqlite3.html
+https://www.tutorialspoint.com/sqlite/sqlite_python.htm
+https://www.geeksforgeeks.org/python-sqlite/
+"""
 
 from sqlite3 import connect
 
@@ -44,6 +50,7 @@ class DatabaseController:
         self.row = row
         self.data = row.__dict__
         self.table = row.table_name()
+        self.id_col = row.id_column()
 
     def create_table(self, new_table_query: str) -> None:
         """
@@ -73,13 +80,15 @@ class DatabaseController:
         self.cursor.execute(f"SELECT * from {table}")
         return self.cursor.fetchall()
 
-    def delete_row(self) -> None:
+    def delete_row(self, row_id: int) -> None:
         """
         Delete row from table where Name column matches
+
+        Args:
+            row_id (int): ID number of row to be updated
         """
-        name = list(self.data.values())[0].replace("'", "")
         self.cursor.execute(
-            f"DELETE FROM {self.table} WHERE {list(self.data.keys())[0]} = '{name}'")
+            f"DELETE FROM {self.table} WHERE {self.id_col} = {row_id}")
         self.connection.commit()
 
     def update_row(self, row_id: int) -> None:
@@ -95,7 +104,7 @@ class DatabaseController:
                 query += f"{key} = '{val}', "
             else:
                 query += f"{key} = {val}, "
-        query = query[:-2] + f" WHERE {self.row.id_column()} = {row_id}"
+        query = query[:-2] + f" WHERE {self.id_col} = {row_id}"
 
         self.cursor.execute(query)
         self.connection.commit()
@@ -129,7 +138,6 @@ class DatabaseController:
         """
         self.cursor.execute(
             f"SELECT {value} FROM {table} WHERE {list(self.data.keys())[0]} = '{name}'")
-        print(self.cursor.fetchall())
         return list(self.cursor.fetchall()[0])[0]
 
     def get_value(self, value: str, table: str, col: str, id: int) -> str:

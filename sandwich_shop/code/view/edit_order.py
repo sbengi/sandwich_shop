@@ -40,12 +40,11 @@ class EditOrder(CreateOrder):
         self.input_frame = input_frame
         self.create_db_viewer(db_display, EditOrder.SPECS["view"])
         self.create_input_widgets(input_frame, EditOrder.SPECS["input_widgets"])
-
+        self.row_no = 0  # tracking placement of widgets on ui grid
         # tracking items added
         self.items_added = {}  # item name: labels list
-        self.row_no = 0
         # create titles for selected items viewer
-        self.items_selected(["Item", "Quantity", "Price"], bg_color="lightyellow")
+        self.add_item_selected(["Item", "Quantity", "Price"], bg_color="lightyellow")
         # bind delete button to relevant function
         self.widgets["Delete record"].configure(command=self.delete_record)
 
@@ -57,26 +56,28 @@ class EditOrder(CreateOrder):
             values (list): row of selected data
         """
         self.clearing()
-        self.widgets["CustomerName"]["data_widget"].insert(0, values[0])
-        lat_long = what3words_converter(values[1])
+        self.selected_id = values[0]
+        self.widgets["CustomerName"]["data_widget"].insert(0, values[1])
+        lat_long = what3words_converter(values[2])
         self.widgets["Location"]["data_widget"].insert(0, lat_long)
+        item = self.id_list_converter(values[3].replace("[", "").replace("]", "").split(", "))
         # map values to variables
-        item = values[2].split(", ")
-        total = float(values[3])
+        total = float(values[4])
         # update widgets
         for itm in item:
-            i_list = [t.strip() for t in itm.replace("}", "").split("{")[1:]]
-            for i in i_list:
-                if i in self.items_added.keys():
-                    # set quantity
-                    quantity = int(self.items_added[i][1]["text"])+1
-                    self.items_added[i][1].configure(text=quantity)
-                    # set price
-                    self.DB.set_row(MenuItem("", 0., 0, 0))
-                    unit_price = self.items_added[i][-1]
-                    self.items_added[i][2].configure(text=round(unit_price*quantity, 2))
-                else:
-                    self.items_selected([i, 1, total])
+            if itm in self.items_added.keys():
+                # set quantity
+                quantity = int(self.items_added[itm]["widgets"][1]["text"])+1
+                self.items_added[itm]["widgets"][1].configure(text=quantity)
+                # set price
+                self.DB.set_row(MenuItem("", 0., 0, 0))
+                unit_price = self.DB.get_value_from_name("Price", "menu", itm)
+                self.items_added[itm]["widgets"][2].configure(text=round(unit_price*quantity, 2))
+            else:
+                self.add_item_selected([itm, 1, total, self.selected_id])
+                self.DB.set_row(MenuItem("", 0., 0, 0))
+                self.items_added[itm]["ID"] = int(
+                    self.DB.get_value_from_name("SandwichID", "menu", itm))
         self.update_total(total, "+")
 
     def id_list_converter(self, items: list) -> list:
@@ -84,29 +85,13 @@ class EditOrder(CreateOrder):
         Conversts list of item ids to names for display
 
         Args:
-            items (list): _description_
+            items (list): ids of items in the order
 
         Returns:
-            list: list of names of ordered items
+            list: names of ordered items
         """
         names = [self.DB.get_value("ItemName", "menu", "SandwichID", int(i)) for i in items]
         return names
-
-    def alter_table_data(self, table_data: tuple | list) -> tuple:
-        """
-        Alters Treeview to show item names rather than ids
-
-        Args:
-            table_data (tuple | list): orders table data fetched from database
-
-        Returns:
-            tuple: all data with items lsit converted to item names list
-        """
-        alter = [list(data) for data in list(table_data)]
-        for data in alter:
-            items = eval(data[3])
-            data[3] = self.id_list_converter(items)
-        return tuple(alter)
 
     def set_data_row(self) -> object:
         """
@@ -123,7 +108,7 @@ class EditOrder(CreateOrder):
         return Order(*data_row)
 
     def set_for_save(self):
-        lat_long = [float(i) for i in self.widgets["Location"]["data_widget"].get().split(",")]
+        lat_long = self.widgets["Location"]["data_widget"].get()
         data_row = [f"{self.widgets['CustomerName']['data_widget'].get()}",
                     f"'{location_converter(lat_long)}'",
                     f"'{self.item_list_converter()}'",
@@ -138,7 +123,7 @@ class EditOrder(CreateOrder):
         self.DB.set_row(data_row)
         # update record instead of saving new if record exists
         try:
-            self.update_existing(data_row)
+            self.update_existing(self.selected_id)
         except IndexError:
             self.invalid_popup()
         self.clear_recreate()

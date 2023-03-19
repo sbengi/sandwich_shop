@@ -30,6 +30,3 @@ exclude_patterns = []
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
-
-# Rinohtype configuration---------------------------------------------------------
-rinoh_documents = [dict(doc='index', target='manual')]

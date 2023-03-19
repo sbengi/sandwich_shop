@@ -1,11 +1,12 @@
 """All input widgets and functionality for creating order on the UI"""
 import sys, os
-sys.path.insert(0, os.path.abspath(".."))
 from tkinter import Frame, Button, Label, END
 
 from .gui_base import GuiBase
 from model.data import Order, MenuItem
 from model.utils import location_converter
+
+sys.path.insert(0, os.path.abspath(".."))
 
 
 class CreateOrder(GuiBase):
@@ -38,7 +39,7 @@ class CreateOrder(GuiBase):
         self.items_added = {}  # item name: labels list
         self.row_no = 0
         # create titles for selected items viewer
-        self.items_selected(["Item", "Quantity", "Price"], bg_color="lightyellow")
+        self.add_item_selected(["Item", "Quantity", "Price"], bg_color="lightyellow")
 
     def correct_input_format(self) -> bool:
         """
@@ -56,7 +57,7 @@ class CreateOrder(GuiBase):
                 (float(self.widgets["Total"]["data_widget"]["text"]) > 0.) &
                 (len(self.items_added) >= 1))
 
-    def items_selected(self, name_list: list, bg_color: str = "white") -> None:
+    def add_item_selected(self, name_list: list, bg_color: str = "white") -> None:
         """
         Convert data from selected row into items listed in input widgets
 
@@ -81,14 +82,16 @@ class CreateOrder(GuiBase):
             plus.grid(column=3, row=self.row_no, ipadx=5, sticky="W")
             minus = Button(master=frame, text="-", font=self.DEFAULT_FONT,
                            command=lambda b=name_list[0]: self.minus_item(b), bg="lightgrey")
+            minus.grid(column=3, row=self.row_no, ipadx=5, sticky="E")
             # get and save unit price for calculations
-            #self.DB.set_row(MenuItem("", 0., 0, 0))
-            print(name_list)
-            #unit_price = self.DB.get_value_from_name("Price", "menu", name_list[0])
-            item_quantity_price[2].configure(text=name_list[2])
+            self.DB.set_row(MenuItem("", 0., 0, 0))
+            unit_price = self.DB.get_value_from_name("Price", "menu", name_list[0])
+            item_quantity_price[2].configure(text=unit_price)
             # update dict of added items and labels
-            self.items_added[name_list[0]] = item_quantity_price + [plus, minus, name_list[2]]
-            minus.grid(column=4, row=self.row_no, ipadx=5, sticky="E")
+            self.items_added[name_list[0]] = {"widgets": [], "ID": 0}
+            self.items_added[name_list[0]]["widgets"] = item_quantity_price + [plus, minus, unit_price]
+            self.items_added[name_list[0]]["ID"] = name_list[3]
+            
         self.row_no += 1
 
     def plus_item(self, b_name: str) -> None:
@@ -98,10 +101,10 @@ class CreateOrder(GuiBase):
         Args:
             b_name (str): Item name in selected row from table
         """
-        quantity = int(self.items_added[b_name][1]["text"])
-        unit_price = self.items_added[b_name][-1]
-        self.items_added[b_name][1].configure(text=quantity+1)
-        self.items_added[b_name][2].configure(
+        quantity = int(self.items_added[b_name]["widgets"][1]["text"])
+        unit_price = self.items_added[b_name]["widgets"][-1]
+        self.items_added[b_name]["widgets"][1].configure(text=quantity+1)
+        self.items_added[b_name]["widgets"][2].configure(
             text=round(float(unit_price*(quantity+1)), 2))
         self.update_total(unit_price, "+")
 
@@ -112,11 +115,11 @@ class CreateOrder(GuiBase):
         Args:
             b_name (str): Item name in selected row from table
         """
-        quantity = int(self.items_added[b_name][1]["text"])
-        unit_price = self.items_added[b_name][-1]
+        quantity = int(self.items_added[b_name]["widgets"][1]["text"])
+        unit_price = self.items_added[b_name]["widgets"][-1]
         if quantity > 1:
-            self.items_added[b_name][1].configure(text=quantity-1)
-            self.items_added[b_name][2].configure(
+            self.items_added[b_name]["widgets"][1].configure(text=quantity-1)
+            self.items_added[b_name]["widgets"][2].configure(
                 text=round(float(unit_price*(quantity-1)), 2))
         else:
             self.delete_order_item(b_name)
@@ -129,7 +132,7 @@ class CreateOrder(GuiBase):
         Args:
             b_name (str): Item name
         """
-        for wdg in self.items_added[b_name][:-1]:
+        for wdg in self.items_added[b_name]["widgets"][:-1]:
             wdg.destroy()
             wdg.pack_forget()
         del self.items_added[b_name]
@@ -142,15 +145,16 @@ class CreateOrder(GuiBase):
             values (list): row of selected menu item data
         """
         # map values to variables
-        item = values[0]
-        total = float(values[1])
+        row_id = values[0]
+        item = values[1]
+        total = float(values[2])
         # update widgets
         if item in self.items_added.keys():
-            quantity = int(self.items_added[item][1]["text"]) + 1
-            self.items_added[item][1].configure(text=quantity)
-            self.items_added[item][2].configure(text=round(total*quantity, 2))
+            quantity = int(self.items_added[item]["widgets"][1]["text"]) + 1
+            self.items_added[item]["widgets"][1].configure(text=quantity)
+            self.items_added[item]["widgets"][2].configure(text=round(total*quantity, 2))
         else:
-            self.items_selected([item, 1, total])
+            self.add_item_selected([item, 1, total, row_id])
         self.update_total(total, "+")
 
     def update_total(self, price: float, operation: str = "+") -> None:
@@ -178,13 +182,10 @@ class CreateOrder(GuiBase):
         Returns:
             str: string of item ids list
         """
-        self.DB.set_row(MenuItem("", 0., 0, 0))
-        ids = {k: self.DB.get_value_from_name("SandwichID", "menu", k)
-               for k in self.items_added.keys()}
         item_list = []
-        for k, v in self.items_added.items():
-            for i in range(int(v[1]["text"])):
-                item_list.append(ids[k])
+        for itm in self.items_added:
+            item_list += [int(self.items_added[itm]["ID"])
+                          ] * int(self.items_added[itm]["widgets"][1]["text"])
         return str(item_list)
 
     def save_to_db(self) -> None:

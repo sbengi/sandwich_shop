@@ -31,6 +31,7 @@ class GuiBase:
         self.DB = DatabaseController()
         self.db_display = db_display
         self.input_frame = input_frame
+        self.selected_id = 0  # id number of the row selected
         self.create_db_viewer(db_display, specs["view"])
         self.create_input_widgets(input_frame, specs["input_widgets"])
 
@@ -60,24 +61,24 @@ class GuiBase:
         self.table_view["columns"] = view_specs["table_view"]["columns"]
         self.table_view.column("#0", width=0)
         table_data = self.DB.display_table(view_specs["table_view"]["table"])
-        table_data = self.alter_table_data(table_data)
         for col in view_specs["table_view"]["columns"]:
             self.table_view.column(col, width=150, anchor=W, minwidth=25)
             self.table_view.heading(col, text=col, anchor=W)
         for i, data in enumerate(table_data):
             table_items = list(data)
+            iid = table_items[0]
             table_items = ["Yes" if n == 1 else n for n in
                            ["No" if e == 0 else e for e in table_items]][1:]
             if i % 2 == 0:
                 self.table_view.insert(parent="",
                                        index="end",
-                                       iid=i,
+                                       iid=iid,
                                        values=table_items,
                                        tags=("even",))
             else:
                 self.table_view.insert(parent="",
                                        index="end",
-                                       iid=i,
+                                       iid=iid,
                                        values=table_items,
                                        tags=("odd",))
 
@@ -153,10 +154,11 @@ class GuiBase:
         Returns:
             list: values of data in the seleced row
         """
-        selected = self.table_view.focus()
-        values = self.table_view.item(selected, 'values')
-        self.selection_action(values)
-        return values
+        selected_id = self.table_view.focus()
+        values = self.table_view.item(selected_id, "values")
+        row_values = [selected_id] + list(values)
+        self.selection_action(row_values)
+        return row_values
 
     def check_input(self):
         """Checks correct input format as implemented by each child class
@@ -216,26 +218,30 @@ class GuiBase:
         self.DB = DatabaseController()
         self.create_db_viewer(self.db_display, self.view_specs)
 
-    def update_existing(self, data_row: object) -> None:
-        """Updates existing record in the database by name
+    def update_existing(self, row_id: int) -> None:
+        """Updates existing record in the database by id
 
         Args:
-            data_row (dataclass): MenuItem or Order
+            row_id (int): id number of row in the database
         """
-        row_id = self.DB.get_value_from_name(
-            data_row.id_column(), data_row.table_name(), list(data_row.__dict__.values())[0])
         self.DB.update_row(row_id)
 
-    def save_to_db(self) -> None:
+    def save_to_db(self, row_id=0) -> None:
         """
         Updates data or saves to database, updates database viewer
+
+        Args:
+            row_id (int): id number of row in the database. Defaults to 0.
         """
         data_row = self.set_data_row()
         self.DB.set_row(data_row)
         # update record instead of saving new if record exists
-        try:
-            self.update_existing(data_row)
-        except IndexError:
+        if row_id != 0:
+            try:
+                self.update_existing(row_id)
+            except IndexError:
+                self.invalid_popup()
+        else:
             self.DB.insert_new()
         self.clear_recreate()
 
@@ -246,7 +252,7 @@ class GuiBase:
         data_row = self.set_data_row()
         self.DB.set_row(data_row)
         try:
-            self.DB.delete_row()
+            self.DB.delete_row(self.selected_id)
             self.clear_recreate()
             self.confirming()
         except IndexError or OperationalError:
@@ -265,17 +271,6 @@ class GuiBase:
             row (int): row number to place custom widgets on the UI
         """
         pass
-
-    def alter_table_data(self, table_data: list) -> list:
-        """Alters table data to display user-friendly format
-
-        Args:
-            table_data (list): list or tuple of lists of data in rows
-
-        Returns:
-            list: list of lists of rows of altered data
-        """
-        return table_data
 
     @abstractmethod
     def correct_input_format(self):

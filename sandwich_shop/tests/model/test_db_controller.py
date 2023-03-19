@@ -1,4 +1,10 @@
-"""Module and class for testing DatabaseController class"""
+"""
+Module and class for testing DatabaseController class
+Sources:
+https://medium.com/@mariusz.raczynski2/pytest-mock-how-to-mock-your-database-connection-5c84a5a0bfc3
+https://igeorgiev.eu/python/tdd/python-unittest-database-applications/
+"""
+
 import pytest
 import sqlite3
 from sqlite3 import OperationalError
@@ -92,18 +98,27 @@ class TestDatabaseController:
         assert isinstance(result, list)
 
     def test_update_row(self, mock_db: object) -> None:
+        """
+        Checks correct query is called and update is completed
+        """
         mock_db.set_row(MockData("'Updated'", 4))
         query = "UPDATE TestTable SET MockName = ''Updated'', MockAmount = 4 WHERE MockID = 1"
         mock_db.update_row(1)
         mock_db.cursor.execute.assert_called_once_with(query)
 
     def test_find_row(self, mock_db: object) -> None:
+        """
+        Checks correct results are fetched from table in the database
+        """
         result = mock_db.find_row("TestTable", "'mock'")
         mock_db.connection.commit.assert_not_called()
         assert isinstance(result, list)
         assert len(result) > 0
 
     def test_get_value_from_name(self, mock_db: object) -> None:
+        """
+        Checks results are fetched from table in the database
+        """
         result = mock_db.get_value_from_name("MockID", "TestTable", "mock")
         query = "SELECT MockID FROM TestTable WHERE MockName = 'mock'"
         mock_db.cursor.execute.assert_called_once_with(query)
@@ -111,6 +126,9 @@ class TestDatabaseController:
         assert result == 1
 
     def test_get_value(self, mock_db: object) -> None:
+        """
+        Checks correct query is called and executed
+        """
         mock_db.get_value("MockName", "TestTable", "MockID", 1)
         query = "SELECT MockName FROM TestTable WHERE MockID = 1"
         mock_db.cursor.execute.assert_called_once_with(query)
@@ -118,22 +136,15 @@ class TestDatabaseController:
 
     def test_delete_row(self, mock_db: object) -> None:
         """Checks delete query is constructed and executed correctly
-
-        Args:
-            mock_db (object): _description_
         """
         mock_db.table = "TestTable"
-        mock_db.data = {"MockName": "'insert'", "MockAmount": 8}
-        query = "DELETE FROM TestTable WHERE MockName = 'insert'"
-        mock_db.delete_row()
+        query = "DELETE FROM TestTable WHERE MockID = 1"
+        mock_db.delete_row(1)
         self.mock_cursor.execute.assert_called_once_with(query)
 
     def test_end_session(self, mock_db: object) -> None:
         """
         Checks that commit and close commands were run
-
-        Args:
-            mock_db (object): pytest fixture
         """
         mock_db.end_session()
         mock_db.connection.commit.assert_called_once()

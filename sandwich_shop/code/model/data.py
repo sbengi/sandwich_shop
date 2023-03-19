@@ -1,3 +1,10 @@
+"""
+Defines dataclasses in line with the database setup
+Sources:
+https://docs.python.org/3/library/dataclasses.html
+https://www.youtube.com/watch?v=CvQ7e6yUtnw
+"""
+
 from dataclasses import dataclass, asdict
 from typing import get_type_hints
 

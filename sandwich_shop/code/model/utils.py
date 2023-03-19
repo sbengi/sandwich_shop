@@ -1,9 +1,13 @@
-"""Module for external what3words api call functions"""
+"""
+Module for external what3words api call functions
+https://developer.what3words.com/public-api/docs
+"""
 import requests
 import os
 
 # get the environment variable api key
 api_key = os.environ.get("API_KEY")
+
 
 def what3words_converter(words: str) -> str:
     """
@@ -36,6 +40,5 @@ def location_converter(lat_long: str) -> str:
     request_link = "https://api.what3words.com/v3/convert-to-3wa"
     query = {"coordinates": lat_long, "key": api_key}
     result = requests.get(request_link, params=query)
-    print(result)
     words = result.json()["words"]
     return words

@@ -72,21 +72,24 @@ class EditMenu(GuiBase):
             bool: True if all formats are correct, else False
         """
         return ((len(self.widgets["ItemName"]["data_widget"].get().split(" ")) > 1) &
+                all([s.isalpha() for s
+                     in self.widgets["ItemName"]["data_widget"].get().split(" ")]) &
                 (float(self.widgets["Price"]["data_widget"].get()) > 0.))
 
-    def selection_action(self, values: list | tuple) -> None:
+    def selection_action(self, values: list) -> None:
         """
         Parses selected row in table view to populate in input widgets
 
         Args:
-            values (list|tuple): values from the selected row
+            values (list): values from the selected row
         """
         self.widgets["ItemName"]["data_widget"].delete(0, END)
         self.widgets["Price"]["data_widget"].delete(0, END)
-        self.widgets["ItemName"]["data_widget"].insert(0, values[0])
-        self.widgets["Price"]["data_widget"].insert(0, values[1])
-        self.vegi.set(1) if values[2] == "Yes" else self.vegi.set(0)
-        self.ndairy.set(1) if values[3] == "Yes" else self.ndairy.set(0)
+        self.widgets["ItemName"]["data_widget"].insert(0, values[1])
+        self.widgets["Price"]["data_widget"].insert(0, values[2])
+        self.vegi.set(1) if values[3] == "Yes" else self.vegi.set(0)
+        self.ndairy.set(1) if values[4] == "Yes" else self.ndairy.set(0)
+        self.selected_id = int(values[0])
 
     def set_data_row(self) -> None:
         """Turns input data into dataclass if datatypes are as expected
@@ -103,6 +106,9 @@ class EditMenu(GuiBase):
             return MenuItem(*data_row)
         except ValueError or TypeError:
             self.invalid_popup()
+
+    def save_to_db(self):
+        super().save_to_db(self.selected_id)
 
     def clearing(self) -> None:
         """
