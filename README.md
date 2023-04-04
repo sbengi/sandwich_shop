@@ -1,5 +1,4 @@
 # Sandwich shop app
-Student no: 710069439
 
 This is a demo app to be used by staff at the Sandwich Shop while taking orders from customers over the phone.
 See the documentation in 'documents' folder for detailed information.
